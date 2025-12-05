@@ -521,7 +521,7 @@ if __name__ == '__main__':
 
         while True:
             try:
-                choice = input(f"Set attacker IP to (1-{len(all_ips)}): ").strip()
+                choice = input(f"Select IP to use for payload's (1-{len(all_ips)}): ").strip()
                 choice_idx = int(choice) - 1
                 if 0 <= choice_idx < len(all_ips):
                     selected_ip = all_ips[choice_idx]
