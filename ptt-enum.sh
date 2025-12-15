@@ -530,13 +530,14 @@ function run_feroxbuster() {
     if [[ $run_quick -eq 1 ]]; then
       echo "[*] Running QUICK feroxbuster scan on: $service://${target}:$port"
       echo "[*] Combined wordlist size: $(wc -l < "$outdir/feroxbuster.medium.txt") unique entries"
-      echo "[*] Running: feroxbuster -u \"$service://${target}:$port\" -w \"$outdir/feroxbuster.medium.txt\" --depth 3 --timeout 30 --scan-limit 2 -o \"$outdir/feroxbuster.quick.raw.$port.txt\""
+      echo "[*] Running: feroxbuster -u \"$service://${target}:$port\" -w \"$outdir/feroxbuster.medium.txt\" --depth 3 --timeout 30 --scan-limit 2 --filter-status 404 -o \"$outdir/feroxbuster.quick.raw.$port.txt\""
 
       feroxbuster -u "$service://${target}:$port" \
         -w "$outdir/feroxbuster.medium.txt" \
         --depth 3 \
         --timeout 30 \
         --scan-limit 2 \
+        --filter-status 404 \
         -o "$outdir/feroxbuster.quick.raw.$port.txt" < /dev/tty
 
       # Process and format QUICK scan output immediately
@@ -548,6 +549,18 @@ function run_feroxbuster() {
       # Extract and sort quick scan results
       grep -E '^200[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null > "$outdir/feroxbuster.quick.$port.txt" || touch "$outdir/feroxbuster.quick.$port.txt"
       grep -E '^301[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true
+      grep -E '^302[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true      
+
+      # Sort and remove duplicate
+      sort -u -f -o "$outdir/feroxbuster.quick.$port.txt" "$outdir/feroxbuster.quick.$port.txt"
+
+      # Add separator
+      echo -e $reportblock >> "$outdir/feroxbuster.quick.$port.txt"
+
+      # Keep original unsorted and non unique
+      grep -E '^200[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true
+      grep -E '^301[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true
+      grep -E '^302[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true      
 
       # Add separator
       echo -e $reportblock >> "$outdir/feroxbuster.quick.$port.txt"
@@ -571,7 +584,7 @@ function run_feroxbuster() {
       echo ""
       echo "[*] Running DEEP feroxbuster scan with extension fuzzing on: $service://${target}:$port"
       echo "[*] Combined wordlist size: $(wc -l < "$outdir/feroxbuster.combined.txt") unique entries"
-      echo "[*] Running: feroxbuster -u \"$service://${target}:$port\" -w \"$outdir/feroxbuster.combined.txt\" -x $combined_extensions --depth 3 --timeout 30 --threads 100 --scan-limit 3 -o \"$outdir/feroxbuster.deep.raw.$port.txt\""
+      echo "[*] Running: feroxbuster -u \"$service://${target}:$port\" -w \"$outdir/feroxbuster.combined.txt\" -x $combined_extensions --depth 3 --timeout 30 --threads 100 --scan-limit 3 --filter-status 404 -o \"$outdir/feroxbuster.deep.raw.$port.txt\""
 
       # Run feroxbuster scan with combined wordlist and extensions
       # --depth 3: recursively scan directories up to 3 levels deep
@@ -584,6 +597,7 @@ function run_feroxbuster() {
         --timeout 30 \
         --threads 100 \
         --scan-limit 3 \
+        --filter-status 404 \
         -o "$outdir/feroxbuster.deep.raw.$port.txt" < /dev/tty
 
       # Process and format DEEP scan output immediately
@@ -595,6 +609,18 @@ function run_feroxbuster() {
       # Extract and sort deep scan results
       grep -E '^200[[:space:]]' "$outdir/feroxbuster.deep.raw.$port.txt" 2>/dev/null > "$outdir/feroxbuster.deep.$port.txt" || touch "$outdir/feroxbuster.deep.$port.txt"
       grep -E '^301[[:space:]]' "$outdir/feroxbuster.deep.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
+      grep -E '^302[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true      
+
+      # Sort and remove duplicate
+      sort -u -f -o "$outdir/feroxbuster.quick.$port.txt" "$outdir/feroxbuster.deep.$port.txt"
+
+      # Add separator
+      echo -e $reportblock >> "$outdir/feroxbuster.quick.$port.txt"
+
+      # Keep original unsorted and non unique
+      grep -E '^200[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
+      grep -E '^301[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
+      grep -E '^302[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true      
 
       # Add separator
       echo -e $reportblock >> "$outdir/feroxbuster.deep.$port.txt"
