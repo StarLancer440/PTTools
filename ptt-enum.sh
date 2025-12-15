@@ -747,7 +747,7 @@ target=""
 outdir=""
 forcenmap=0
 nodisplay=0
-scanner="gobuster"  # Default scanner (gobuster or feroxbuster)
+scanner="feroxbuster"  # Default scanner (gobuster or feroxbuster)
 reportblock="\n------------------------------------------------------------------------------------------------------------\n"
 webExtensions="sh,txt,php,html,htm,asp,aspx,js,jsp,xml,log,json,zip,tar.gz,tar,pdf"
 
