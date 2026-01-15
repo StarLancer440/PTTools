@@ -70,8 +70,11 @@ function manage_ports_list() {
     echo "Options:"
     echo "  (A)dd entry"
     echo "  (D)elete entry"
-    echo "  (C)onfirm - all entries are correct"
-    read -p "Choose an option [A/D/C]: " choice
+    echo "  (C)onfirm - all entries are correct (default)"
+    read -p "Choose an option [A/D/C (default)]: " choice
+
+    # Set default to 'c' if empty
+    choice="${choice:-c}"
 
     case "${choice,,}" in
       a)
@@ -108,6 +111,84 @@ function manage_ports_list() {
       c)
         # Confirm and exit loop
         echo "[+] Ports list confirmed. Proceeding with scan..."
+        break
+        ;;
+      *)
+        echo "[!] Invalid option. Please choose A, D, or C."
+        ;;
+    esac
+  done
+}
+
+# Display and manage web extensions list interactively
+function manage_extensions() {
+  # Convert comma-separated string to array
+  IFS=',' read -ra ext_array <<< "$webExtensions"
+
+  while true; do
+    echo ""
+    echo "========================================"
+    echo "Web Extensions List:"
+    echo "========================================"
+    if [ ${#ext_array[@]} -eq 0 ]; then
+      echo "No extensions configured."
+    else
+      for i in "${!ext_array[@]}"; do
+        printf "[%2d] %s\n" "$i" "${ext_array[$i]}"
+      done
+    fi
+    echo "========================================"
+    echo ""
+
+    # Ask user for action
+    echo "Options:"
+    echo "  (A)dd extension"
+    echo "  (D)elete extension"
+    echo "  (C)onfirm - all extensions are correct (default)"
+    read -p "Choose an option [A/D/C (default)]: " choice
+
+    # Set default to 'c' if empty
+    choice="${choice:-c}"
+
+    case "${choice,,}" in
+      a)
+        # Add extension
+        read -p "Enter extension to add (without dot, e.g., 'py' or 'tar.gz'): " new_ext
+
+        # Validate input - basic check for valid extension format
+        if [[ -n "$new_ext" && "$new_ext" =~ ^[a-zA-Z0-9.]+$ ]]; then
+          # Check if extension already exists
+          if [[ " ${ext_array[*]} " =~ " ${new_ext} " ]]; then
+            echo "[!] Extension '$new_ext' already exists in the list."
+          else
+            ext_array+=("$new_ext")
+            echo "[+] Added extension: $new_ext"
+          fi
+        else
+          echo "[!] Invalid extension format. Extension not added."
+        fi
+        ;;
+      d)
+        # Delete extension
+        if [ ${#ext_array[@]} -eq 0 ]; then
+          echo "[!] No extensions to delete."
+        else
+          read -p "Enter index number to delete [0-$((${#ext_array[@]} - 1))]: " del_index
+          if [[ "$del_index" =~ ^[0-9]+$ && "$del_index" -ge 0 && "$del_index" -lt ${#ext_array[@]} ]]; then
+            echo "[+] Deleted extension: ${ext_array[$del_index]}"
+            unset 'ext_array[$del_index]'
+            # Re-index array to remove gaps
+            ext_array=("${ext_array[@]}")
+          else
+            echo "[!] Invalid index. No extension deleted."
+          fi
+        fi
+        ;;
+      c)
+        # Confirm and exit loop
+        # Convert array back to comma-separated string
+        webExtensions=$(IFS=','; echo "${ext_array[*]}")
+        echo "[+] Extensions list confirmed: $webExtensions"
         break
         ;;
       *)
@@ -579,10 +660,25 @@ function run_feroxbuster() {
 
     # RUN DEEP SCAN if requested (either directly or after quick scan)
     if [[ $run_deep -eq 1 ]]; then
+      # Display current extensions and offer to modify
+      echo ""
+      echo "========================================"
+      echo "Current Web Extensions:"
+      echo "========================================"
+      echo "$webExtensions"
+      echo "========================================"
+      echo ""
+
+      read -p "Do you want to modify the extensions list? (y/n): " modify_ext
+      if [[ "$modify_ext" =~ ^[Yy]$ ]]; then
+        manage_extensions
+      fi
+
       local combined_extensions="${webExtensions},old,bak,backup"
 
       echo ""
       echo "[*] Running DEEP feroxbuster scan with extension fuzzing on: $service://${target}:$port"
+      echo "[*] Using extensions: $combined_extensions"
       echo "[*] Combined wordlist size: $(wc -l < "$outdir/feroxbuster.combined.txt") unique entries"
       echo "[*] Running: feroxbuster -u \"$service://${target}:$port\" -w \"$outdir/feroxbuster.combined.txt\" -x $combined_extensions --depth 3 --timeout 30 --threads 100 --scan-limit 3 --filter-status 404 -o \"$outdir/feroxbuster.deep.raw.$port.txt\""
 
