@@ -2,6 +2,9 @@
 
 # Perform enumeration against a target
 
+# Save original arguments for transcript re-execution
+ORIGINAL_ARGS=("$@")
+
 # ---------------------- helper functions block ----------------------
 
 # Build a 'master' web enumaration wordlist from many wordlist
@@ -251,10 +254,10 @@ function run_gobuster() {
     cat ./master-enum.txt > "$outdir/gobuster.dir.txt"
     cat "$outdir/cewl.txt" >> "$outdir/gobuster.dir.txt"
 
-    echo "[*] Running: gobuster dir -u \"$service://${target}:$port\" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.raft_files.$port.txt\""
+    echo -e "\n\033[1;33m>>>\033[0m \033[1;36mgobuster dir -u \"$service://${target}:$port\" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.raft_files.$port.txt\"\033[0m\n"
     gobuster dir -u "$service://${target}:$port" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error  -o "$outdir/gobuster.raft_files.$port.txt"
 
-    echo "[*] Running: gobuster dir -u \"$service://${target}:$port\" -w ./master-enum.txt -x $webExtensions -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.master-ext.$port.txt\""
+    echo -e "\n\033[1;33m>>>\033[0m \033[1;36mgobuster dir -u \"$service://${target}:$port\" -w \"$outdir/gobuster.dir.txt\" -x $webExtensions -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.master-ext.$port.txt\"\033[0m\n"
     gobuster dir -u "$service://${target}:$port" -w "$outdir/gobuster.dir.txt" -x $webExtensions -t 50 --timeout 30s --no-error  -o "$outdir/gobuster.master-ext.$port.txt"
 
     # Combine all output in a single file
@@ -265,7 +268,7 @@ function run_gobuster() {
     echo -e $reportblock >> "$outdir/gobuster.$port.txt"
     cat "$outdir/gobuster_temp.$port.txt" >> "$outdir/gobuster.$port.txt"
     rm "$outdir/gobuster_temp.$port.txt"
-    [[ $nodisplay -eq 0 ]] && mousepad "$outdir/gobuster.$port.txt" &
+    [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/gobuster.$port.txt" &
   done
 }
 
@@ -353,10 +356,10 @@ function run_extended_gobuster() {
       local base_url="$service://${target}:$port$dir"
 
       echo "[*] Extended scan on: $base_url"
-      echo "[*] Running: gobuster dir -u \"$base_url\" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.extended.raft_files.${safe_dir}.$port.txt\""
+      echo -e "\n\033[1;33m>>>\033[0m \033[1;36mgobuster dir -u \"$base_url\" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.extended.raft_files.${safe_dir}.$port.txt\"\033[0m\n"
       gobuster dir -u "$base_url" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error -o "$outdir/gobuster.extended.raft_files.${safe_dir}.$port.txt"
 
-      echo "[*] Running: gobuster dir -u \"$base_url\" -w ./master-enum.txt -x $webExtensions -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.extended.master-ext.${safe_dir}.$port.txt\""
+      echo -e "\n\033[1;33m>>>\033[0m \033[1;36mgobuster dir -u \"$base_url\" -w \"$outdir/gobuster.dir.txt\" -x $webExtensions -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.extended.master-ext.${safe_dir}.$port.txt\"\033[0m\n"
       gobuster dir -u "$base_url" -w "$outdir/gobuster.dir.txt" -x $webExtensions -t 50 --timeout 30s --no-error -o "$outdir/gobuster.extended.master-ext.${safe_dir}.$port.txt"
 
       # Combine all output in a single file
@@ -367,7 +370,7 @@ function run_extended_gobuster() {
       echo -e $reportblock >> "$outdir/gobuster.extended.${safe_dir}.$port.txt"
       cat "$outdir/gobuster_temp.${safe_dir}.$port.txt" >> "$outdir/gobuster.extended.${safe_dir}.$port.txt"
       rm "$outdir/gobuster_temp.${safe_dir}.$port.txt"
-      [[ $nodisplay -eq 0 ]] && mousepad "$outdir/gobuster.extended.${safe_dir}.$port.txt" &
+      [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/gobuster.extended.${safe_dir}.$port.txt" &
     done
   done
 }
@@ -461,10 +464,10 @@ function run_extended_gobuster_level2() {
       local base_url="$service://${target}:$port$dir"
 
       echo "[*] Level 2 extended scan on: $base_url"
-      echo "[*] Running: gobuster dir -u \"$base_url\" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.extended2.raft_files.${safe_dir}.$port.txt\""
+      echo -e "\n\033[1;33m>>>\033[0m \033[1;36mgobuster dir -u \"$base_url\" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.extended2.raft_files.${safe_dir}.$port.txt\"\033[0m\n"
       gobuster dir -u "$base_url" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error -o "$outdir/gobuster.extended2.raft_files.${safe_dir}.$port.txt"
 
-      echo "[*] Running: gobuster dir -u \"$base_url\" -w ./master-enum.txt -x $webExtensions -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.extended2.master-ext.${safe_dir}.$port.txt\""
+      echo -e "\n\033[1;33m>>>\033[0m \033[1;36mgobuster dir -u \"$base_url\" -w \"$outdir/gobuster.dir.txt\" -x $webExtensions -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.extended2.master-ext.${safe_dir}.$port.txt\"\033[0m\n"
       gobuster dir -u "$base_url" -w "$outdir/gobuster.dir.txt" -x $webExtensions -t 50 --timeout 30s --no-error -o "$outdir/gobuster.extended2.master-ext.${safe_dir}.$port.txt"
 
       # Combine all output in a single file
@@ -475,7 +478,7 @@ function run_extended_gobuster_level2() {
       echo -e $reportblock >> "$outdir/gobuster.extended2.${safe_dir}.$port.txt"
       cat "$outdir/gobuster_temp.${safe_dir}.$port.txt" >> "$outdir/gobuster.extended2.${safe_dir}.$port.txt"
       rm "$outdir/gobuster_temp.${safe_dir}.$port.txt"
-      [[ $nodisplay -eq 0 ]] && mousepad "$outdir/gobuster.extended2.${safe_dir}.$port.txt" &
+      [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/gobuster.extended2.${safe_dir}.$port.txt" &
     done
   done
 }
@@ -611,7 +614,7 @@ function run_feroxbuster() {
     if [[ $run_quick -eq 1 ]]; then
       echo "[*] Running QUICK feroxbuster scan on: $service://${target}:$port"
       echo "[*] Combined wordlist size: $(wc -l < "$outdir/feroxbuster.medium.txt") unique entries"
-      echo "[*] Running: feroxbuster -u \"$service://${target}:$port\" -w \"$outdir/feroxbuster.medium.txt\" --depth 3 --timeout 30 --scan-limit 2 --filter-status 404 -o \"$outdir/feroxbuster.quick.raw.$port.txt\""
+      echo -e "\n\033[1;33m>>>\033[0m \033[1;36mferoxbuster -u \"$service://${target}:$port\" -w \"$outdir/feroxbuster.medium.txt\" --depth 3 --timeout 30 --scan-limit 2 --filter-status 404 -o \"$outdir/feroxbuster.quick.raw.$port.txt\"\033[0m\n"
 
       feroxbuster -u "$service://${target}:$port" \
         -w "$outdir/feroxbuster.medium.txt" \
@@ -650,7 +653,7 @@ function run_feroxbuster() {
       cat "$outdir/feroxbuster.quick.raw.$port.txt" >> "$outdir/feroxbuster.quick.$port.txt"
 
       # Open quick scan results in editor if not suppressed
-      [[ $nodisplay -eq 0 ]] && mousepad "$outdir/feroxbuster.quick.$port.txt" &
+      [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/feroxbuster.quick.$port.txt" &
 
       # Ask if user wants to also run deep scan
       echo ""
@@ -680,7 +683,7 @@ function run_feroxbuster() {
       echo "[*] Running DEEP feroxbuster scan with extension fuzzing on: $service://${target}:$port"
       echo "[*] Using extensions: $combined_extensions"
       echo "[*] Combined wordlist size: $(wc -l < "$outdir/feroxbuster.combined.txt") unique entries"
-      echo "[*] Running: feroxbuster -u \"$service://${target}:$port\" -w \"$outdir/feroxbuster.combined.txt\" -x $combined_extensions --depth 3 --timeout 30 --threads 100 --scan-limit 3 --filter-status 404 -o \"$outdir/feroxbuster.deep.raw.$port.txt\""
+      echo -e "\n\033[1;33m>>>\033[0m \033[1;36mferoxbuster -u \"$service://${target}:$port\" -w \"$outdir/feroxbuster.combined.txt\" -x $combined_extensions --depth 3 --timeout 30 --threads 100 --scan-limit 3 --filter-status 404 -o \"$outdir/feroxbuster.deep.raw.$port.txt\"\033[0m\n"
 
       # Run feroxbuster scan with combined wordlist and extensions
       # --depth 3: recursively scan directories up to 3 levels deep
@@ -725,7 +728,7 @@ function run_feroxbuster() {
       cat "$outdir/feroxbuster.deep.raw.$port.txt" >> "$outdir/feroxbuster.deep.$port.txt"
 
       # Open deep scan results in editor if not suppressed
-      [[ $nodisplay -eq 0 ]] && mousepad "$outdir/feroxbuster.deep.$port.txt" &
+      [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/feroxbuster.deep.$port.txt" &
     fi
   done
 }
@@ -747,8 +750,9 @@ function run_nikto() {
       continue
     fi
 
+    echo -e "\n\033[1;33m>>>\033[0m \033[1;36mnikto -h $service://${target}:$port -ask no -o \"$outdir/nikto.$port.txt\"\033[0m\n"
     nikto -h $service://${target}:$port -ask no -o "$outdir/nikto.$port.txt"
-    [[ $nodisplay -eq 0 ]] && mousepad "$outdir/nikto.$port.txt" &
+    [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/nikto.$port.txt" &
   done
 }
 
@@ -769,8 +773,9 @@ function run_whatweb() {
       continue
     fi
 
+    echo -e "\n\033[1;33m>>>\033[0m \033[1;36mwhatweb \"$service://${target}:$port\" --log-verbose=\"$outdir/whatweb.$port.txt\"\033[0m\n"
     whatweb "$service://${target}:$port" --log-verbose="$outdir/whatweb.$port.txt"
-    [[ $nodisplay -eq 0 ]] && mousepad "$outdir/whatweb.$port.txt" &
+    [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/whatweb.$port.txt" &
   done
 }
 
@@ -791,6 +796,7 @@ function run_cewl() {
     # Skip non http(s) ports
     [[ ! "${service,,}" =~ ^(https?|http-proxy)$ ]] && continue
 
+    echo -e "\n\033[1;33m>>>\033[0m \033[1;36mcewl \"$service://${target}:$port\" -d 5 -m 4 -w \"$outdir/cewl.$port.txt\"\033[0m\n"
     cewl "$service://${target}:$port" -d 5 -m 4 -w "$outdir/cewl.$port.txt"
     cat "$outdir/cewl.$port.txt" >> "$outdir/cewl.txt"
   done
@@ -798,6 +804,7 @@ function run_cewl() {
   # Sort and deduplicate if cewl.txt was created
   if [[ -f "$outdir/cewl.txt" ]]; then
     sort -u -o "$outdir/cewl.txt" "$outdir/cewl.txt"
+    [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/cewl.txt" &
   fi
 }
 
@@ -810,6 +817,7 @@ function run_nmap() {
   fi
 
   # Stage 1 scan (quick TCP port scan)
+  echo -e "\n\033[1;33m>>>\033[0m \033[1;36mnmap -T4 -Pn -p- \"$target\" -oN $outdir/nmap.stage1.txt\033[0m\n"
   nmap -T4 -Pn -p- "$target" -oN $outdir/nmap.stage1.txt
 
   parse_nmap_results "$outdir/nmap.stage1.txt"
@@ -823,6 +831,7 @@ function run_nmap() {
   done
   PORTLIST="${PORTLIST%,}"  # Remove trailing comma
   echo "Stage 2 ports: $PORTLIST"
+  echo -e "\n\033[1;33m>>>\033[0m \033[1;36mnmap -Pn -p $PORTLIST -A -T4 --script=default \"$target\" -oN $outdir/nmap.stage2.txt\033[0m\n"
   nmap -Pn -p $PORTLIST -A -T4 --script=default "$target" -oN $outdir/nmap.stage2.txt
 
   cat $outdir/nmap.stage1.txt > $outdir/nmap.txt
@@ -843,32 +852,35 @@ target=""
 outdir=""
 forcenmap=0
 nodisplay=0
+transcript=0
 scanner="feroxbuster"  # Default scanner (gobuster or feroxbuster)
 reportblock="\n------------------------------------------------------------------------------------------------------------\n"
 webExtensions="sh,txt,php,html,htm,asp,aspx,js,jsp,xml,log,json,zip,tar.gz,tar,pdf"
 
 #  Parse parameters
-while getopts "t:o:fns:" opt; do
+while getopts "t:o:fns:l" opt; do
     case "$opt" in
         t) target="$OPTARG" ;;
         o) outdir="$OPTARG" ;;
         f) forcenmap=1 ;;
         n) nodisplay=1 ;;
         s) scanner="$OPTARG" ;;
-        *) echo "Usage: $0 -t <value> [-o <outdir>] [-f] [-n] [-s <gobuster|feroxbuster>]"; exit 1 ;;
+        l) transcript=1 ;;
+        *) echo "Usage: $0 -t <value> [-o <outdir>] [-f] [-n] [-l] [-s <gobuster|feroxbuster>]"; exit 1 ;;
     esac
 done
 
 # Check if no IP address or domain provided
 if [ -z "$target" ]; then
     echo "Error: No IP address/domain provided."
-    echo "Usage: $0 -t <target> [-o <outdir>] [-f] [-n] [-s <scanner>]"
+    echo "Usage: $0 -t <target> [-o <outdir>] [-f] [-n] [-l] [-s <scanner>]"
     echo ""
     echo "Options:"
     echo "  -t <target>   Target IP address or domain (required)"
     echo "  -o <outdir>   Output directory (default: report_<target>)"
     echo "  -f            Force nmap scan even if results exist"
     echo "  -n            No display - don't open report files in mousepad"
+    echo "  -l            Log transcript - save full console output with colors"
     echo "  -s <scanner>  Directory scanner to use: gobuster (default) or feroxbuster"
     echo ""
     echo "Scanner Comparison:"
@@ -876,6 +888,10 @@ if [ -z "$target" ]; then
     echo "  feroxbuster  - Built-in recursion (depth 3), auto-discovers subdirectories"
     echo "               - Quick scan: Fast directory/file enumeration"
     echo "               - Deep scan: Thorough with extension fuzzing (.php, .asp, .bak, etc.)"
+    echo ""
+    echo "Transcript:"
+    echo "  Use -l to create a transcript file preserving colors and cursor positioning."
+    echo "  View with: less -R <transcript_file> or cat <transcript_file>"
     exit 1
 fi
 
@@ -894,6 +910,22 @@ fi
 # Create output directory if it doesn't exist
 if [ ! -d "$outdir" ]; then
     mkdir "$outdir"
+fi
+
+# Handle transcript recording with script command
+# Re-execute under script if -l is set and not already running under script
+if [[ $transcript -eq 1 && -z "${PTT_ENUM_SCRIPTED:-}" ]]; then
+    transcript_file="$outdir/transcript_$(date +%Y%m%d_%H%M%S).log"
+    echo "[*] Transcript enabled - recording to: $transcript_file"
+    echo "[*] Note: Transcript preserves colors. View with: less -R $transcript_file"
+    export PTT_ENUM_SCRIPTED=1
+    # Re-execute this script under 'script' to capture all output with colors
+    # Using printf %q to properly quote arguments for shell execution
+    quoted_args=""
+    for arg in "${ORIGINAL_ARGS[@]}"; do
+        quoted_args+="$(printf '%q ' "$arg")"
+    done
+    exec script -q -c "$0 $quoted_args" "$transcript_file"
 fi
 
 # Set error handling
