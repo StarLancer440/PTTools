@@ -252,23 +252,29 @@ function run_gobuster() {
     #gobuster dir -u "$service://${target}:$port" -w ./master-enum.txt -t 50 --timeout 30s --no-error -o "$outdir/gobuster.master-dir.$port.txt"
 
     cat ./master-enum.txt > "$outdir/gobuster.dir.txt"
-    cat "$outdir/cewl.txt" >> "$outdir/gobuster.dir.txt"
+    cat "$outdir/cewl.txt" >> "$outdir/gobuster.dir.txt" 2>/dev/null || true
 
     echo -e "\n\033[1;33m>>>\033[0m \033[1;36mgobuster dir -u \"$service://${target}:$port\" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.raft_files.$port.txt\"\033[0m\n"
-    gobuster dir -u "$service://${target}:$port" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error  -o "$outdir/gobuster.raft_files.$port.txt"
 
     echo -e "\n\033[1;33m>>>\033[0m \033[1;36mgobuster dir -u \"$service://${target}:$port\" -w \"$outdir/gobuster.dir.txt\" -x $webExtensions -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.master-ext.$port.txt\"\033[0m\n"
-    gobuster dir -u "$service://${target}:$port" -w "$outdir/gobuster.dir.txt" -x $webExtensions -t 50 --timeout 30s --no-error  -o "$outdir/gobuster.master-ext.$port.txt"
 
-    # Combine all output in a single file
-    sort -u "$outdir/gobuster.raft_files.$port.txt" "$outdir/gobuster.master-ext.$port.txt" -o "$outdir/gobuster_temp.$port.txt"
-    sed -i -r 's/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[m|K]//g' "$outdir/gobuster_temp.$port.txt"
-    cat "$outdir/gobuster_temp.$port.txt" | grep '(Status: 200)' > "$outdir/gobuster.$port.txt"
-    cat "$outdir/gobuster_temp.$port.txt" | grep '(Status: 301)' >> "$outdir/gobuster.$port.txt"
-    echo -e $reportblock >> "$outdir/gobuster.$port.txt"
-    cat "$outdir/gobuster_temp.$port.txt" >> "$outdir/gobuster.$port.txt"
-    rm "$outdir/gobuster_temp.$port.txt"
-    [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/gobuster.$port.txt" &
+    if [[ $preview -eq 1 ]]; then
+      echo "[PREVIEW] Commands not executed - preview mode enabled"
+    else
+      gobuster dir -u "$service://${target}:$port" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error  -o "$outdir/gobuster.raft_files.$port.txt"
+
+      gobuster dir -u "$service://${target}:$port" -w "$outdir/gobuster.dir.txt" -x $webExtensions -t 50 --timeout 30s --no-error  -o "$outdir/gobuster.master-ext.$port.txt"
+
+      # Combine all output in a single file
+      sort -u "$outdir/gobuster.raft_files.$port.txt" "$outdir/gobuster.master-ext.$port.txt" -o "$outdir/gobuster_temp.$port.txt"
+      sed -i -r 's/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[m|K]//g' "$outdir/gobuster_temp.$port.txt"
+      cat "$outdir/gobuster_temp.$port.txt" | grep '(Status: 200)' > "$outdir/gobuster.$port.txt"
+      cat "$outdir/gobuster_temp.$port.txt" | grep '(Status: 301)' >> "$outdir/gobuster.$port.txt"
+      echo -e $reportblock >> "$outdir/gobuster.$port.txt"
+      cat "$outdir/gobuster_temp.$port.txt" >> "$outdir/gobuster.$port.txt"
+      rm "$outdir/gobuster_temp.$port.txt"
+      [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/gobuster.$port.txt" &
+    fi
   done
 }
 
@@ -357,20 +363,26 @@ function run_extended_gobuster() {
 
       echo "[*] Extended scan on: $base_url"
       echo -e "\n\033[1;33m>>>\033[0m \033[1;36mgobuster dir -u \"$base_url\" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.extended.raft_files.${safe_dir}.$port.txt\"\033[0m\n"
-      gobuster dir -u "$base_url" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error -o "$outdir/gobuster.extended.raft_files.${safe_dir}.$port.txt"
 
       echo -e "\n\033[1;33m>>>\033[0m \033[1;36mgobuster dir -u \"$base_url\" -w \"$outdir/gobuster.dir.txt\" -x $webExtensions -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.extended.master-ext.${safe_dir}.$port.txt\"\033[0m\n"
-      gobuster dir -u "$base_url" -w "$outdir/gobuster.dir.txt" -x $webExtensions -t 50 --timeout 30s --no-error -o "$outdir/gobuster.extended.master-ext.${safe_dir}.$port.txt"
 
-      # Combine all output in a single file
-      sort -u "$outdir/gobuster.extended.raft_files.${safe_dir}.$port.txt" "$outdir/gobuster.extended.master-ext.${safe_dir}.$port.txt" -o "$outdir/gobuster_temp.${safe_dir}.$port.txt"
-      sed -i -r 's/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[m|K]//g' "$outdir/gobuster_temp.${safe_dir}.$port.txt"
-      cat "$outdir/gobuster_temp.${safe_dir}.$port.txt" | grep '(Status: 200)' > "$outdir/gobuster.extended.${safe_dir}.$port.txt"
-      cat "$outdir/gobuster_temp.${safe_dir}.$port.txt" | grep '(Status: 301)' >> "$outdir/gobuster.extended.${safe_dir}.$port.txt"
-      echo -e $reportblock >> "$outdir/gobuster.extended.${safe_dir}.$port.txt"
-      cat "$outdir/gobuster_temp.${safe_dir}.$port.txt" >> "$outdir/gobuster.extended.${safe_dir}.$port.txt"
-      rm "$outdir/gobuster_temp.${safe_dir}.$port.txt"
-      [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/gobuster.extended.${safe_dir}.$port.txt" &
+      if [[ $preview -eq 1 ]]; then
+        echo "[PREVIEW] Commands not executed - preview mode enabled"
+      else
+        gobuster dir -u "$base_url" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error -o "$outdir/gobuster.extended.raft_files.${safe_dir}.$port.txt"
+
+        gobuster dir -u "$base_url" -w "$outdir/gobuster.dir.txt" -x $webExtensions -t 50 --timeout 30s --no-error -o "$outdir/gobuster.extended.master-ext.${safe_dir}.$port.txt"
+
+        # Combine all output in a single file
+        sort -u "$outdir/gobuster.extended.raft_files.${safe_dir}.$port.txt" "$outdir/gobuster.extended.master-ext.${safe_dir}.$port.txt" -o "$outdir/gobuster_temp.${safe_dir}.$port.txt"
+        sed -i -r 's/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[m|K]//g' "$outdir/gobuster_temp.${safe_dir}.$port.txt"
+        cat "$outdir/gobuster_temp.${safe_dir}.$port.txt" | grep '(Status: 200)' > "$outdir/gobuster.extended.${safe_dir}.$port.txt"
+        cat "$outdir/gobuster_temp.${safe_dir}.$port.txt" | grep '(Status: 301)' >> "$outdir/gobuster.extended.${safe_dir}.$port.txt"
+        echo -e $reportblock >> "$outdir/gobuster.extended.${safe_dir}.$port.txt"
+        cat "$outdir/gobuster_temp.${safe_dir}.$port.txt" >> "$outdir/gobuster.extended.${safe_dir}.$port.txt"
+        rm "$outdir/gobuster_temp.${safe_dir}.$port.txt"
+        [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/gobuster.extended.${safe_dir}.$port.txt" &
+      fi
     done
   done
 }
@@ -465,20 +477,26 @@ function run_extended_gobuster_level2() {
 
       echo "[*] Level 2 extended scan on: $base_url"
       echo -e "\n\033[1;33m>>>\033[0m \033[1;36mgobuster dir -u \"$base_url\" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.extended2.raft_files.${safe_dir}.$port.txt\"\033[0m\n"
-      gobuster dir -u "$base_url" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error -o "$outdir/gobuster.extended2.raft_files.${safe_dir}.$port.txt"
 
       echo -e "\n\033[1;33m>>>\033[0m \033[1;36mgobuster dir -u \"$base_url\" -w \"$outdir/gobuster.dir.txt\" -x $webExtensions -t 50 --timeout 30s --no-error -o \"$outdir/gobuster.extended2.master-ext.${safe_dir}.$port.txt\"\033[0m\n"
-      gobuster dir -u "$base_url" -w "$outdir/gobuster.dir.txt" -x $webExtensions -t 50 --timeout 30s --no-error -o "$outdir/gobuster.extended2.master-ext.${safe_dir}.$port.txt"
 
-      # Combine all output in a single file
-      sort -u "$outdir/gobuster.extended2.raft_files.${safe_dir}.$port.txt" "$outdir/gobuster.extended2.master-ext.${safe_dir}.$port.txt" -o "$outdir/gobuster_temp.${safe_dir}.$port.txt"
-      sed -i -r 's/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[m|K]//g' "$outdir/gobuster_temp.${safe_dir}.$port.txt"
-      cat "$outdir/gobuster_temp.${safe_dir}.$port.txt" | grep '(Status: 200)' > "$outdir/gobuster.extended2.${safe_dir}.$port.txt"
-      cat "$outdir/gobuster_temp.${safe_dir}.$port.txt" | grep '(Status: 301)' >> "$outdir/gobuster.extended2.${safe_dir}.$port.txt"
-      echo -e $reportblock >> "$outdir/gobuster.extended2.${safe_dir}.$port.txt"
-      cat "$outdir/gobuster_temp.${safe_dir}.$port.txt" >> "$outdir/gobuster.extended2.${safe_dir}.$port.txt"
-      rm "$outdir/gobuster_temp.${safe_dir}.$port.txt"
-      [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/gobuster.extended2.${safe_dir}.$port.txt" &
+      if [[ $preview -eq 1 ]]; then
+        echo "[PREVIEW] Commands not executed - preview mode enabled"
+      else
+        gobuster dir -u "$base_url" -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt -x old,bak,backup -t 50 --timeout 30s --no-error -o "$outdir/gobuster.extended2.raft_files.${safe_dir}.$port.txt"
+
+        gobuster dir -u "$base_url" -w "$outdir/gobuster.dir.txt" -x $webExtensions -t 50 --timeout 30s --no-error -o "$outdir/gobuster.extended2.master-ext.${safe_dir}.$port.txt"
+
+        # Combine all output in a single file
+        sort -u "$outdir/gobuster.extended2.raft_files.${safe_dir}.$port.txt" "$outdir/gobuster.extended2.master-ext.${safe_dir}.$port.txt" -o "$outdir/gobuster_temp.${safe_dir}.$port.txt"
+        sed -i -r 's/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[m|K]//g' "$outdir/gobuster_temp.${safe_dir}.$port.txt"
+        cat "$outdir/gobuster_temp.${safe_dir}.$port.txt" | grep '(Status: 200)' > "$outdir/gobuster.extended2.${safe_dir}.$port.txt"
+        cat "$outdir/gobuster_temp.${safe_dir}.$port.txt" | grep '(Status: 301)' >> "$outdir/gobuster.extended2.${safe_dir}.$port.txt"
+        echo -e $reportblock >> "$outdir/gobuster.extended2.${safe_dir}.$port.txt"
+        cat "$outdir/gobuster_temp.${safe_dir}.$port.txt" >> "$outdir/gobuster.extended2.${safe_dir}.$port.txt"
+        rm "$outdir/gobuster_temp.${safe_dir}.$port.txt"
+        [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/gobuster.extended2.${safe_dir}.$port.txt" &
+      fi
     done
   done
 }
@@ -616,68 +634,83 @@ function run_feroxbuster() {
       echo "[*] Combined wordlist size: $(wc -l < "$outdir/feroxbuster.medium.txt") unique entries"
       echo -e "\n\033[1;33m>>>\033[0m \033[1;36mferoxbuster -u \"$service://${target}:$port\" -w \"$outdir/feroxbuster.medium.txt\" --depth 3 --timeout 30 --scan-limit 2 --filter-status 404 -o \"$outdir/feroxbuster.quick.raw.$port.txt\"\033[0m\n"
 
-      feroxbuster -u "$service://${target}:$port" \
-        -w "$outdir/feroxbuster.medium.txt" \
-        --depth 3 \
-        --timeout 30 \
-        --scan-limit 2 \
-        --filter-status 404 \
-        -o "$outdir/feroxbuster.quick.raw.$port.txt" < /dev/tty
+      if [[ $preview -eq 1 ]]; then
+        echo "[PREVIEW] Command not executed - preview mode enabled"
+      else
+        feroxbuster -u "$service://${target}:$port" \
+          -w "$outdir/feroxbuster.medium.txt" \
+          --depth 3 \
+          --timeout 30 \
+          --scan-limit 2 \
+          --filter-status 404 \
+          -o "$outdir/feroxbuster.quick.raw.$port.txt" < /dev/tty
 
-      # Process and format QUICK scan output immediately
-      echo "[*] Processing quick scan results..."
+        # Process and format QUICK scan output immediately
+        echo "[*] Processing quick scan results..."
 
-      # Remove ANSI color codes from quick scan
-      sed -i -r 's/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[m|K]//g' "$outdir/feroxbuster.quick.raw.$port.txt"
+        # Remove ANSI color codes from quick scan
+        sed -i -r 's/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[m|K]//g' "$outdir/feroxbuster.quick.raw.$port.txt"
 
-      # Extract and sort quick scan results
-      grep -E '^200[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null > "$outdir/feroxbuster.quick.$port.txt" || touch "$outdir/feroxbuster.quick.$port.txt"
-      grep -E '^301[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true
-      grep -E '^302[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true      
+        # Extract and sort quick scan results
+        grep -E '^200[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null > "$outdir/feroxbuster.quick.$port.txt" || touch "$outdir/feroxbuster.quick.$port.txt"
+        grep -E '^301[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true
+        grep -E '^302[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true
 
-      # Sort and remove duplicate
-      sort -u -f -o "$outdir/feroxbuster.quick.$port.txt" "$outdir/feroxbuster.quick.$port.txt"
+        # Sort and remove duplicate
+        sort -u -f -o "$outdir/feroxbuster.quick.$port.txt" "$outdir/feroxbuster.quick.$port.txt"
 
-      # Add separator
-      echo -e $reportblock >> "$outdir/feroxbuster.quick.$port.txt"
+        # Add separator
+        echo -e $reportblock >> "$outdir/feroxbuster.quick.$port.txt"
 
-      # Keep original unsorted and non unique
-      grep -E '^200[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true
-      grep -E '^301[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true
-      grep -E '^302[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true      
+        # Keep original unsorted and non unique
+        grep -E '^200[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true
+        grep -E '^301[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true
+        grep -E '^302[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true
 
-      # Add separator
-      echo -e $reportblock >> "$outdir/feroxbuster.quick.$port.txt"
+        # Add separator
+        echo -e $reportblock >> "$outdir/feroxbuster.quick.$port.txt"
 
-      # Append full output for reference
-      cat "$outdir/feroxbuster.quick.raw.$port.txt" >> "$outdir/feroxbuster.quick.$port.txt"
+        # Append full output for reference
+        cat "$outdir/feroxbuster.quick.raw.$port.txt" >> "$outdir/feroxbuster.quick.$port.txt"
 
-      # Open quick scan results in editor if not suppressed
-      [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/feroxbuster.quick.$port.txt" &
+        # Open quick scan results in editor if not suppressed
+        [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/feroxbuster.quick.$port.txt" &
 
-      # Ask if user wants to also run deep scan
+        # Ask if user wants to also run deep scan
+        echo ""
+        read -p "Quick scan complete. Do you also want to run a DEEP scan with extension fuzzing? (y/n): " run_deep_choice
+        [[ "$run_deep_choice" =~ ^[Yy]$ ]] && run_deep=1
+      fi
+
+      # Always display deep scan command for reference (even after quick scan or in preview mode)
+      local ref_extensions="${webExtensions},old,bak,backup"
       echo ""
-      read -p "Quick scan complete. Do you also want to run a DEEP scan with extension fuzzing? (y/n): " run_deep_choice
-      [[ "$run_deep_choice" =~ ^[Yy]$ ]] && run_deep=1
+      echo "[*] Deep scan command for manual execution later:"
+      echo -e "\033[1;33m>>>\033[0m \033[1;36mferoxbuster -u \"$service://${target}:$port\" -w \"$outdir/feroxbuster.combined.txt\" -x $ref_extensions --depth 3 --timeout 30 --threads 100 --scan-limit 3 --filter-status 404 -o \"$outdir/feroxbuster.deep.raw.$port.txt\"\033[0m"
+      echo ""
     fi
 
     # RUN DEEP SCAN if requested (either directly or after quick scan)
     if [[ $run_deep -eq 1 ]]; then
-      # Display current extensions and offer to modify
-      echo ""
-      echo "========================================"
-      echo "Current Web Extensions:"
-      echo "========================================"
-      echo "$webExtensions"
-      echo "========================================"
-      echo ""
-
-      read -p "Do you want to modify the extensions list? (y/n): " modify_ext
-      if [[ "$modify_ext" =~ ^[Yy]$ ]]; then
-        manage_extensions
-      fi
-
       local combined_extensions="${webExtensions},old,bak,backup"
+
+      # In preview mode, skip interactive prompts
+      if [[ $preview -eq 0 ]]; then
+        # Display current extensions and offer to modify
+        echo ""
+        echo "========================================"
+        echo "Current Web Extensions:"
+        echo "========================================"
+        echo "$webExtensions"
+        echo "========================================"
+        echo ""
+
+        read -p "Do you want to modify the extensions list? (y/n): " modify_ext
+        if [[ "$modify_ext" =~ ^[Yy]$ ]]; then
+          manage_extensions
+        fi
+        combined_extensions="${webExtensions},old,bak,backup"
+      fi
 
       echo ""
       echo "[*] Running DEEP feroxbuster scan with extension fuzzing on: $service://${target}:$port"
@@ -685,50 +718,54 @@ function run_feroxbuster() {
       echo "[*] Combined wordlist size: $(wc -l < "$outdir/feroxbuster.combined.txt") unique entries"
       echo -e "\n\033[1;33m>>>\033[0m \033[1;36mferoxbuster -u \"$service://${target}:$port\" -w \"$outdir/feroxbuster.combined.txt\" -x $combined_extensions --depth 3 --timeout 30 --threads 100 --scan-limit 3 --filter-status 404 -o \"$outdir/feroxbuster.deep.raw.$port.txt\"\033[0m\n"
 
-      # Run feroxbuster scan with combined wordlist and extensions
-      # --depth 3: recursively scan directories up to 3 levels deep
-      # --timeout 30: 30 second timeout
-      # --threads 100: use 100 threads for deep scan
-      feroxbuster -u "$service://${target}:$port" \
-        -w "$outdir/feroxbuster.combined.txt" \
-        -x $combined_extensions \
-        --depth 3 \
-        --timeout 30 \
-        --threads 100 \
-        --scan-limit 3 \
-        --filter-status 404 \
-        -o "$outdir/feroxbuster.deep.raw.$port.txt" < /dev/tty
+      if [[ $preview -eq 1 ]]; then
+        echo "[PREVIEW] Command not executed - preview mode enabled"
+      else
+        # Run feroxbuster scan with combined wordlist and extensions
+        # --depth 3: recursively scan directories up to 3 levels deep
+        # --timeout 30: 30 second timeout
+        # --threads 100: use 100 threads for deep scan
+        feroxbuster -u "$service://${target}:$port" \
+          -w "$outdir/feroxbuster.combined.txt" \
+          -x $combined_extensions \
+          --depth 3 \
+          --timeout 30 \
+          --threads 100 \
+          --scan-limit 3 \
+          --filter-status 404 \
+          -o "$outdir/feroxbuster.deep.raw.$port.txt" < /dev/tty
 
-      # Process and format DEEP scan output immediately
-      echo "[*] Processing deep scan results..."
+        # Process and format DEEP scan output immediately
+        echo "[*] Processing deep scan results..."
 
-      # Remove ANSI color codes from deep scan
-      sed -i -r 's/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[m|K]//g' "$outdir/feroxbuster.deep.raw.$port.txt"
+        # Remove ANSI color codes from deep scan
+        sed -i -r 's/\x1B\[([0-9]{1,3}(;[0-9]{1,3})*)?[m|K]//g' "$outdir/feroxbuster.deep.raw.$port.txt"
 
-      # Extract and sort deep scan results
-      grep -E '^200[[:space:]]' "$outdir/feroxbuster.deep.raw.$port.txt" 2>/dev/null > "$outdir/feroxbuster.deep.$port.txt" || touch "$outdir/feroxbuster.deep.$port.txt"
-      grep -E '^301[[:space:]]' "$outdir/feroxbuster.deep.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
-      grep -E '^302[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true      
+        # Extract and sort deep scan results
+        grep -E '^200[[:space:]]' "$outdir/feroxbuster.deep.raw.$port.txt" 2>/dev/null > "$outdir/feroxbuster.deep.$port.txt" || touch "$outdir/feroxbuster.deep.$port.txt"
+        grep -E '^301[[:space:]]' "$outdir/feroxbuster.deep.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
+        grep -E '^302[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true
 
-      # Sort and remove duplicate
-      sort -u -f -o "$outdir/feroxbuster.quick.$port.txt" "$outdir/feroxbuster.deep.$port.txt"
+        # Sort and remove duplicate
+        sort -u -f -o "$outdir/feroxbuster.quick.$port.txt" "$outdir/feroxbuster.deep.$port.txt"
 
-      # Add separator
-      echo -e $reportblock >> "$outdir/feroxbuster.quick.$port.txt"
+        # Add separator
+        echo -e $reportblock >> "$outdir/feroxbuster.quick.$port.txt"
 
-      # Keep original unsorted and non unique
-      grep -E '^200[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
-      grep -E '^301[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
-      grep -E '^302[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true      
+        # Keep original unsorted and non unique
+        grep -E '^200[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
+        grep -E '^301[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
+        grep -E '^302[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
 
-      # Add separator
-      echo -e $reportblock >> "$outdir/feroxbuster.deep.$port.txt"
+        # Add separator
+        echo -e $reportblock >> "$outdir/feroxbuster.deep.$port.txt"
 
-      # Append full output for reference
-      cat "$outdir/feroxbuster.deep.raw.$port.txt" >> "$outdir/feroxbuster.deep.$port.txt"
+        # Append full output for reference
+        cat "$outdir/feroxbuster.deep.raw.$port.txt" >> "$outdir/feroxbuster.deep.$port.txt"
 
-      # Open deep scan results in editor if not suppressed
-      [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/feroxbuster.deep.$port.txt" &
+        # Open deep scan results in editor if not suppressed
+        [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/feroxbuster.deep.$port.txt" &
+      fi
     fi
   done
 }
@@ -751,8 +788,12 @@ function run_nikto() {
     fi
 
     echo -e "\n\033[1;33m>>>\033[0m \033[1;36mnikto -h $service://${target}:$port -ask no -o \"$outdir/nikto.$port.txt\"\033[0m\n"
-    nikto -h $service://${target}:$port -ask no -o "$outdir/nikto.$port.txt"
-    [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/nikto.$port.txt" &
+    if [[ $preview -eq 1 ]]; then
+      echo "[PREVIEW] Command not executed - preview mode enabled"
+    else
+      nikto -h $service://${target}:$port -ask no -o "$outdir/nikto.$port.txt"
+      [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/nikto.$port.txt" &
+    fi
   done
 }
 
@@ -774,8 +815,12 @@ function run_whatweb() {
     fi
 
     echo -e "\n\033[1;33m>>>\033[0m \033[1;36mwhatweb \"$service://${target}:$port\" --log-verbose=\"$outdir/whatweb.$port.txt\"\033[0m\n"
-    whatweb "$service://${target}:$port" --log-verbose="$outdir/whatweb.$port.txt"
-    [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/whatweb.$port.txt" &
+    if [[ $preview -eq 1 ]]; then
+      echo "[PREVIEW] Command not executed - preview mode enabled"
+    else
+      whatweb "$service://${target}:$port" --log-verbose="$outdir/whatweb.$port.txt"
+      [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/whatweb.$port.txt" &
+    fi
   done
 }
 
@@ -797,12 +842,13 @@ function run_cewl() {
     [[ ! "${service,,}" =~ ^(https?|http-proxy)$ ]] && continue
 
     echo -e "\n\033[1;33m>>>\033[0m \033[1;36mcewl \"$service://${target}:$port\" -d 5 -m 4 -w \"$outdir/cewl.$port.txt\"\033[0m\n"
+    # Always run cewl even in preview mode - wordlist is used by other tools
     cewl "$service://${target}:$port" -d 5 -m 4 -w "$outdir/cewl.$port.txt"
     cat "$outdir/cewl.$port.txt" >> "$outdir/cewl.txt"
   done
 
-  # Sort and deduplicate if cewl.txt was created
-  if [[ -f "$outdir/cewl.txt" ]]; then
+  # Sort and deduplicate if cewl.txt was created (skip in preview mode)
+  if [[ $preview -eq 0 && -f "$outdir/cewl.txt" ]]; then
     sort -u -o "$outdir/cewl.txt" "$outdir/cewl.txt"
     [[ $nodisplay -eq 0 ]] && setsid mousepad "$outdir/cewl.txt" &
   fi
@@ -853,12 +899,13 @@ outdir=""
 forcenmap=0
 nodisplay=0
 transcript=0
+preview=0
 scanner="feroxbuster"  # Default scanner (gobuster or feroxbuster)
 reportblock="\n------------------------------------------------------------------------------------------------------------\n"
 webExtensions="sh,txt,php,html,htm,asp,aspx,js,jsp,xml,log,json,zip,tar.gz,tar,pdf"
 
 #  Parse parameters
-while getopts "t:o:fns:l" opt; do
+while getopts "t:o:fns:lp" opt; do
     case "$opt" in
         t) target="$OPTARG" ;;
         o) outdir="$OPTARG" ;;
@@ -866,14 +913,15 @@ while getopts "t:o:fns:l" opt; do
         n) nodisplay=1 ;;
         s) scanner="$OPTARG" ;;
         l) transcript=1 ;;
-        *) echo "Usage: $0 -t <value> [-o <outdir>] [-f] [-n] [-l] [-s <gobuster|feroxbuster>]"; exit 1 ;;
+        p) preview=1 ;;
+        *) echo "Usage: $0 -t <value> [-o <outdir>] [-f] [-n] [-l] [-p] [-s <gobuster|feroxbuster>]"; exit 1 ;;
     esac
 done
 
 # Check if no IP address or domain provided
 if [ -z "$target" ]; then
     echo "Error: No IP address/domain provided."
-    echo "Usage: $0 -t <target> [-o <outdir>] [-f] [-n] [-l] [-s <scanner>]"
+    echo "Usage: $0 -t <target> [-o <outdir>] [-f] [-n] [-l] [-p] [-s <scanner>]"
     echo ""
     echo "Options:"
     echo "  -t <target>   Target IP address or domain (required)"
@@ -881,6 +929,7 @@ if [ -z "$target" ]; then
     echo "  -f            Force nmap scan even if results exist"
     echo "  -n            No display - don't open report files in mousepad"
     echo "  -l            Log transcript - save full console output with colors"
+    echo "  -p            Preview mode - run nmap only, show commands for other scans"
     echo "  -s <scanner>  Directory scanner to use: gobuster (default) or feroxbuster"
     echo ""
     echo "Scanner Comparison:"
@@ -892,6 +941,10 @@ if [ -z "$target" ]; then
     echo "Transcript:"
     echo "  Use -l to create a transcript file preserving colors and cursor positioning."
     echo "  View with: less -R <transcript_file> or cat <transcript_file>"
+    echo ""
+    echo "Preview Mode:"
+    echo "  Use -p to run only nmap scans. Other tools (whatweb, cewl, nikto, feroxbuster/gobuster)"
+    echo "  will display their commands without executing, allowing manual control."
     exit 1
 fi
 
