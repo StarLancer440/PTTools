@@ -744,18 +744,18 @@ function run_feroxbuster() {
         # Extract and sort deep scan results
         grep -E '^200[[:space:]]' "$outdir/feroxbuster.deep.raw.$port.txt" 2>/dev/null > "$outdir/feroxbuster.deep.$port.txt" || touch "$outdir/feroxbuster.deep.$port.txt"
         grep -E '^301[[:space:]]' "$outdir/feroxbuster.deep.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
-        grep -E '^302[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.quick.$port.txt" || true
+        grep -E '^302[[:space:]]' "$outdir/feroxbuster.deep.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
 
         # Sort and remove duplicate
-        sort -u -f -o "$outdir/feroxbuster.quick.$port.txt" "$outdir/feroxbuster.deep.$port.txt"
+        sort -u -f -o "$outdir/feroxbuster.deep.$port.txt" "$outdir/feroxbuster.deep.$port.txt"
 
         # Add separator
-        echo -e $reportblock >> "$outdir/feroxbuster.quick.$port.txt"
+        echo -e $reportblock >> "$outdir/feroxbuster.deep.$port.txt"
 
         # Keep original unsorted and non unique
-        grep -E '^200[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
-        grep -E '^301[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
-        grep -E '^302[[:space:]]' "$outdir/feroxbuster.quick.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
+        grep -E '^200[[:space:]]' "$outdir/feroxbuster.deep.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
+        grep -E '^301[[:space:]]' "$outdir/feroxbuster.deep.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
+        grep -E '^302[[:space:]]' "$outdir/feroxbuster.deep.raw.$port.txt" 2>/dev/null >> "$outdir/feroxbuster.deep.$port.txt" || true
 
         # Add separator
         echo -e $reportblock >> "$outdir/feroxbuster.deep.$port.txt"
